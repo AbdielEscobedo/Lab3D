@@ -11,14 +11,26 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
-            if (session?.user) fetchProfile(session.user.id)
-            else setLoading(false)
-        })
+        let mounted = true;
+        const initializeAuth = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession()
+                if (error) throw error
+                if (mounted) {
+                    setUser(session?.user ?? null)
+                    if (session?.user) await fetchProfile(session.user.id)
+                    else setLoading(false)
+                }
+            } catch (error) {
+                console.error("Error initializing auth:", error)
+                if (mounted) setLoading(false)
+            }
+        }
+        initializeAuth()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (_event, session) => {
+                if (!mounted) return
                 setUser(session?.user ?? null)
                 if (session?.user) await fetchProfile(session.user.id)
                 else {
@@ -28,17 +40,28 @@ export function AuthProvider({ children }) {
             }
         )
 
-        return () => subscription.unsubscribe()
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
+        }
     }, [])
 
     async function fetchProfile(userId) {
-        const { data } = await supabase
-            .from('perfiles')
-            .select('*')
-            .eq('id', userId)
-            .single()
-        setProfile(data)
-        setLoading(false)
+        try {
+            const { data, error } = await supabase
+                .from('perfiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
+            if (error && error.code !== 'PGRST116') {
+                console.error("fetchProfile error:", error)
+            }
+            setProfile(data)
+        } catch (error) {
+            console.error("fetchProfile threw:", error)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const signUp = async (email, password, nombreCompleto) => {

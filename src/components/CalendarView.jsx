@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -18,6 +18,16 @@ export default function CalendarView() {
     const [events, setEvents] = useState([])
     const [modalOpen, setModalOpen] = useState(false)
     const [selectedInfo, setSelectedInfo] = useState(null)
+
+    const [selectedMachineId, setSelectedMachineId] = useState('all')
+    const [currentDate, setCurrentDate] = useState(() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    })
+    const calendarRef = useRef(null)
 
     const fetchMachines = useCallback(async () => {
         const { data } = await supabase.from('maquinas').select('*').order('orden')
@@ -50,11 +60,34 @@ export default function CalendarView() {
         fetchReservations()
     }, [fetchMachines, fetchReservations])
 
-    const resources = machines.map((m) => ({
+    const filteredMachines = selectedMachineId === 'all'
+        ? machines
+        : machines.filter(m => m.id === selectedMachineId)
+
+    const resources = filteredMachines.map((m) => ({
         id: m.id,
         title: m.nombre,
         estado: m.estado,
     }))
+
+    const handleDateChange = (e) => {
+        const dateStr = e.target.value;
+        setCurrentDate(dateStr);
+        if (calendarRef.current) {
+            calendarRef.current.getApi().gotoDate(dateStr);
+        }
+    }
+
+    const handleDatesSet = () => {
+        if (calendarRef.current) {
+            const api = calendarRef.current.getApi();
+            const d = api.getDate();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            setCurrentDate(`${year}-${month}-${day}`);
+        }
+    }
 
     const handleDateSelect = (selectInfo) => {
         if (!user) return
@@ -83,11 +116,45 @@ export default function CalendarView() {
     }
 
     return (
-        <div className="flex-1 p-4 md:p-6">
+        <div className="flex-1 p-4 md:p-6 flex flex-col gap-4">
+            <div className="bg-[var(--color-surface-light)] rounded-2xl p-4 border border-[var(--color-surface-lighter)] shadow-md flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
+                        <label className="text-sm font-medium text-[var(--color-text-muted)]">
+                            Máquina
+                        </label>
+                        <select
+                            value={selectedMachineId}
+                            onChange={(e) => setSelectedMachineId(e.target.value)}
+                            className="bg-[var(--color-surface)] border border-[var(--color-surface-lighter)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition"
+                        >
+                            <option value="all">Todas las máquinas</option>
+                            {machines.map(m => (
+                                <option key={m.id} value={m.id}>{m.nombre}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
+                        <label className="text-sm font-medium text-[var(--color-text-muted)]">
+                            Ir a Fecha
+                        </label>
+                        <input
+                            type="date"
+                            value={currentDate}
+                            onChange={handleDateChange}
+                            className="bg-[var(--color-surface)] border border-[var(--color-surface-lighter)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition min-h-[42px]"
+                        />
+                    </div>
+                </div>
+            </div>
+
             <div className="bg-[var(--color-surface-light)] rounded-2xl p-4 md:p-6 border border-[var(--color-surface-lighter)] shadow-xl">
                 <FullCalendar
+                    ref={calendarRef}
                     plugins={[resourceTimeGridPlugin, interactionPlugin]}
                     initialView="resourceTimeGridDay"
+                    datesSet={handleDatesSet}
                     resources={resources}
                     events={events}
                     selectable={!!user}

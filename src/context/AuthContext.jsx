@@ -11,53 +11,51 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                fetchProfile(session.user.id)
-            } else {
-                setLoading(false)
-            }
-        }).catch((err) => {
-            console.error("Error getSession:", err)
-            setLoading(false)
-        })
+        let mounted = true
 
+        const safeSetState = (u, p, l) => {
+            if (!mounted) return
+            setUser(u)
+            setProfile(p)
+            setLoading(l)
+        }
+
+        async function fetchAndSetProfile(sessionUser) {
+            try {
+                const { data, error } = await supabase
+                    .from('perfiles')
+                    .select('*')
+                    .eq('id', sessionUser.id)
+                    .single()
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error("Profile fetch error:", error)
+                }
+                safeSetState(sessionUser, data || null, false)
+            } catch (err) {
+                safeSetState(sessionUser, null, false)
+            }
+        }
+
+        // Set up listener (this automatically fires an INITIAL_SESSION event)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
-                // Ignore INITIAL_SESSION if we already handled it via getSession, 
-                // but setting state again is harmless and prevents bugs.
-                setUser(session?.user ?? null)
+            async (event, session) => {
+                if (!mounted) return
+
                 if (session?.user) {
-                    await fetchProfile(session.user.id)
+                    setUser(session.user)
+                    await fetchAndSetProfile(session.user)
                 } else {
-                    setProfile(null)
-                    setLoading(false)
+                    safeSetState(null, null, false)
                 }
             }
         )
 
-        return () => subscription.unsubscribe()
-    }, [])
-
-    async function fetchProfile(userId) {
-        try {
-            const { data, error } = await supabase
-                .from('perfiles')
-                .select('*')
-                .eq('id', userId)
-                .single()
-            if (error && error.code !== 'PGRST116') {
-                console.error("fetchProfile error:", error)
-            }
-            // Always set profile, even if null, then clear loading
-            setProfile(data || null)
-        } catch (error) {
-            console.error("fetchProfile threw:", error)
-        } finally {
-            setLoading(false)
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
         }
-    }
+    }, [])
 
     const signUp = async (email, password, nombreCompleto) => {
         const { data, error } = await supabase.auth.signUp({ email, password })

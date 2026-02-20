@@ -11,29 +11,36 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        let mounted = true;
-        const initializeAuth = async () => {
+        let isCancelled = false
+
+        const initSession = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession()
-                if (error) throw error
-                if (mounted) {
-                    setUser(session?.user ?? null)
-                    if (session?.user) await fetchProfile(session.user.id)
-                    else setLoading(false)
+                const { data: { session } } = await supabase.auth.getSession()
+                if (isCancelled) return
+
+                setUser(session?.user ?? null)
+                if (session?.user) {
+                    await fetchProfile(session.user.id)
+                } else {
+                    setLoading(false)
                 }
             } catch (error) {
-                console.error("Error initializing auth:", error)
-                if (mounted) setLoading(false)
+                console.error('Error fetching session:', error)
+                if (!isCancelled) setLoading(false)
             }
         }
-        initializeAuth()
+
+        initSession()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
-                if (!mounted) return
+            async (event, session) => {
+                if (isCancelled) return
+                if (event === 'INITIAL_SESSION') return // handled by getSession
+
                 setUser(session?.user ?? null)
-                if (session?.user) await fetchProfile(session.user.id)
-                else {
+                if (session?.user) {
+                    await fetchProfile(session.user.id)
+                } else {
                     setProfile(null)
                     setLoading(false)
                 }
@@ -41,7 +48,7 @@ export function AuthProvider({ children }) {
         )
 
         return () => {
-            mounted = false
+            isCancelled = true
             subscription.unsubscribe()
         }
     }, [])
@@ -56,7 +63,8 @@ export function AuthProvider({ children }) {
             if (error && error.code !== 'PGRST116') {
                 console.error("fetchProfile error:", error)
             }
-            setProfile(data)
+            // Always set profile, even if null, then clear loading
+            setProfile(data || null)
         } catch (error) {
             console.error("fetchProfile threw:", error)
         } finally {

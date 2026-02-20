@@ -177,6 +177,16 @@ export default function CalendarView() {
                         minute: '2-digit',
                         meridiem: 'short',
                     }}
+                    eventContent={(eventInfo) => {
+                        const [name, status] = eventInfo.event.title.split(' — ')
+                        return (
+                            <div className="p-1 flex flex-col overflow-hidden h-full text-white text-xs leading-tight">
+                                <div className="font-bold truncate" title={name}>{name}</div>
+                                <div className="opacity-90 mt-0.5 truncate">{eventInfo.timeText}</div>
+                                {status && <div className="opacity-75 text-[10px] mt-0.5 uppercase tracking-wider truncate">{status}</div>}
+                            </div>
+                        )
+                    }}
                     resourceLabelContent={(arg) => (
                         <div className="text-center">
                             <div className="font-semibold text-sm">{arg.resource.title}</div>

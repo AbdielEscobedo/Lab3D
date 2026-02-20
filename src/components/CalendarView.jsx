@@ -20,7 +20,7 @@ export default function CalendarView() {
     const [selectedInfo, setSelectedInfo] = useState(null)
 
     const fetchMachines = useCallback(async () => {
-        const { data } = await supabase.from('maquinas').select('*').order('nombre')
+        const { data } = await supabase.from('maquinas').select('*').order('orden')
         if (data) setMachines(data)
     }, [])
 
@@ -115,10 +115,10 @@ export default function CalendarView() {
                             <div className="font-semibold text-sm">{arg.resource.title}</div>
                             <div
                                 className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block ${arg.resource.extendedProps.estado === 'disponible'
-                                        ? 'bg-emerald-500/20 text-emerald-400'
-                                        : arg.resource.extendedProps.estado === 'mantenimiento'
-                                            ? 'bg-amber-500/20 text-amber-400'
-                                            : 'bg-red-500/20 text-red-400'
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : arg.resource.extendedProps.estado === 'mantenimiento'
+                                        ? 'bg-amber-500/20 text-amber-400'
+                                        : 'bg-red-500/20 text-red-400'
                                     }`}
                             >
                                 {arg.resource.extendedProps.estado}

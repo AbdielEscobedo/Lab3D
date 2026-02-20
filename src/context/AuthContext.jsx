@@ -11,32 +11,22 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        let isCancelled = false
-
-        const initSession = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (isCancelled) return
-
-                setUser(session?.user ?? null)
-                if (session?.user) {
-                    await fetchProfile(session.user.id)
-                } else {
-                    setLoading(false)
-                }
-            } catch (error) {
-                console.error('Error fetching session:', error)
-                if (!isCancelled) setLoading(false)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null)
+            if (session?.user) {
+                fetchProfile(session.user.id)
+            } else {
+                setLoading(false)
             }
-        }
-
-        initSession()
+        }).catch((err) => {
+            console.error("Error getSession:", err)
+            setLoading(false)
+        })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                if (isCancelled) return
-                if (event === 'INITIAL_SESSION') return // handled by getSession
-
+            async (_event, session) => {
+                // Ignore INITIAL_SESSION if we already handled it via getSession, 
+                // but setting state again is harmless and prevents bugs.
                 setUser(session?.user ?? null)
                 if (session?.user) {
                     await fetchProfile(session.user.id)
@@ -47,10 +37,7 @@ export function AuthProvider({ children }) {
             }
         )
 
-        return () => {
-            isCancelled = true
-            subscription.unsubscribe()
-        }
+        return () => subscription.unsubscribe()
     }, [])
 
     async function fetchProfile(userId) {

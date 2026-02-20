@@ -11,7 +11,7 @@ export default function Navbar() {
                 <div className="w-9 h-9 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                     <span className="text-lg">🖨️</span>
                 </div>
-                <span className="text-lg font-bold text-white hidden sm:inline">WebLab 3D</span>
+                <span className="text-lg font-bold text-white hidden sm:inline">Laboratorio de prototipado 3D</span>
             </div>
 
             {/* Nav links */}

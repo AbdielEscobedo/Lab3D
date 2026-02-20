@@ -8,6 +8,7 @@ export default function Login() {
     const [isRegister, setIsRegister] = useState(false)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const [name, setName] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
@@ -23,6 +24,11 @@ export default function Login() {
             if (isRegister) {
                 if (!name.trim()) {
                     setError('Ingresa tu nombre completo.')
+                    setLoading(false)
+                    return
+                }
+                if (password !== confirmPassword) {
+                    setError('Las contraseñas no coinciden.')
                     setLoading(false)
                     return
                 }
@@ -100,6 +106,23 @@ export default function Login() {
                                 className="w-full bg-[var(--color-surface)] border border-[var(--color-surface-lighter)] rounded-lg px-4 py-2.5 text-white placeholder:text-[var(--color-surface-lighter)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition"
                             />
                         </div>
+
+                        {isRegister && (
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">
+                                    Confirmar Contraseña
+                                </label>
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    minLength={6}
+                                    className="w-full bg-[var(--color-surface)] border border-[var(--color-surface-lighter)] rounded-lg px-4 py-2.5 text-white placeholder:text-[var(--color-surface-lighter)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition"
+                                />
+                            </div>
+                        )}
 
                         {error && (
                             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">

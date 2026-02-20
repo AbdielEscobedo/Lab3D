@@ -58,15 +58,16 @@ export function AuthProvider({ children }) {
     }, [])
 
     const signUp = async (email, password, nombreCompleto) => {
-        const { data, error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    nombre_completo: nombreCompleto,
+                },
+            },
+        })
         if (error) throw error
-        if (data.user) {
-            await supabase.from('perfiles').insert({
-                id: data.user.id,
-                nombre_completo: nombreCompleto,
-                rol: 'alumno',
-            })
-        }
         return data
     }
 

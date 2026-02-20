@@ -10,7 +10,7 @@ export default function AdminReservations() {
         setLoading(true)
         let query = supabase
             .from('reservas')
-            .select('*, perfiles(nombre_completo), maquinas(nombre)')
+            .select('*, perfiles(nombre_completo, email), maquinas(nombre)')
             .order('inicio', { ascending: false })
 
         if (filter !== 'all') {
@@ -79,8 +79,8 @@ export default function AdminReservations() {
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === f
-                                    ? 'bg-[var(--color-primary)] text-white'
-                                    : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-lighter)]'
+                                ? 'bg-[var(--color-primary)] text-white'
+                                : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-lighter)]'
                                 }`}
                         >
                             {f === 'all' ? 'Todas' : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -112,7 +112,10 @@ export default function AdminReservations() {
                                     key={r.id}
                                     className="border-b border-[var(--color-surface-lighter)] hover:bg-[var(--color-surface)]/50 transition"
                                 >
-                                    <td className="py-3 px-2 text-white">{r.perfiles?.nombre_completo || '—'}</td>
+                                    <td className="py-3 px-2">
+                                        <div className="font-medium text-white">{r.perfiles?.nombre_completo || '—'}</div>
+                                        {r.perfiles?.email && <div className="text-xs text-[var(--color-text-muted)]">{r.perfiles.email}</div>}
+                                    </td>
                                     <td className="py-3 px-2 text-[var(--color-accent)]">{r.maquinas?.nombre || '—'}</td>
                                     <td className="py-3 px-2 text-[var(--color-text-muted)]">{formatDate(r.inicio)}</td>
                                     <td className="py-3 px-2 text-[var(--color-text-muted)]">{formatDate(r.fin)}</td>

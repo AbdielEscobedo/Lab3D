@@ -37,7 +37,7 @@ export default function CalendarView() {
     const fetchReservations = useCallback(async () => {
         const { data } = await supabase
             .from('reservas')
-            .select('*, perfiles(nombre_completo), maquinas(nombre)')
+            .select('*, perfiles(nombre_completo, email), maquinas(nombre)')
         if (data) {
             setEvents(
                 data.map((r) => ({
@@ -49,7 +49,7 @@ export default function CalendarView() {
                     backgroundColor: STATUS_COLORS[r.status] || STATUS_COLORS.pendiente,
                     borderColor: 'transparent',
                     classNames: [`event-${r.status}`],
-                    extendedProps: { status: r.status, alumno_id: r.alumno_id },
+                    extendedProps: { status: r.status, alumno_id: r.alumno_id, email: r.perfiles?.email },
                 }))
             )
         }
@@ -179,9 +179,11 @@ export default function CalendarView() {
                     }}
                     eventContent={(eventInfo) => {
                         const [name, status] = eventInfo.event.title.split(' — ')
+                        const email = eventInfo.event.extendedProps.email
                         return (
                             <div className="p-1 flex flex-col overflow-hidden h-full text-white text-xs leading-tight">
                                 <div className="font-bold truncate" title={name}>{name}</div>
+                                {email && <div className="text-[10px] opacity-75 truncate" title={email}>{email}</div>}
                                 <div className="opacity-90 mt-0.5 truncate">{eventInfo.timeText}</div>
                                 {status && <div className="opacity-75 text-[10px] mt-0.5 uppercase tracking-wider truncate">{status}</div>}
                             </div>
